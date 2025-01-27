@@ -10,6 +10,7 @@ import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const config = await import('./config.js').then(m => m.default);
 
 const store = new Store();
 let mainWindow;
@@ -152,12 +153,12 @@ function monitorClipboard() {
 
                 try {
                     // Try to update timestamp first
-                    await axios.put(`http://localhost:8080/api/clipboard/${hash}/touch`);
+                    await axios.put(`${config.serverUrl}${config.apiEndpoints.touch(hash)}`);
                     if (mainWindow) mainWindow.webContents.send('refresh-list');
                 } catch (error) {
                     if (error.response?.status === 404) {
                         // If item doesn't exist, create it
-                        await axios.post('http://localhost:8080/api/clipboard', payload);
+                        await axios.post(`${config.serverUrl}${config.apiEndpoints.clipboard}`, payload);
                         if (mainWindow) mainWindow.webContents.send('refresh-list');
                     } else {
                         console.error('Failed to sync clipboard:', error);
