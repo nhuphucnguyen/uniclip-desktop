@@ -1,0 +1,21 @@
+{
+  "name": "uniclip-desktop",
+  "version": "1.0.0",
+  "description": "Universal Clipboard Desktop Client",
+  "main": "src/main.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "dev": "electron .",
+    "postinstall": "node scripts/create-fallback-icon.mjs"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "electron-store": "^10.0.0"
+  },
+  "devDependencies": {
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}
