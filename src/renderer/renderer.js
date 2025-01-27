@@ -1,3 +1,5 @@
+const { ipcRenderer, clipboard, nativeImage } = require('electron');
+
 function updateConnectionStatus(isConnected) {
     const statusDot = document.getElementById('status-dot');
     if (isConnected) {
@@ -36,11 +38,33 @@ function renderClipboardItems(items) {
             content = `<div class="clipboard-text error">Invalid or missing content</div>`;
         }
         
+        // Add copy button
+        const copyButton = `
+            <button class="copy-button" title="Copy to clipboard">
+                <svg viewBox="0 0 16 16">
+                    <path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6zM2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z" fill="currentColor"/>
+                </svg>
+            </button>
+        `;
+        
         // Update content
         itemElement.innerHTML = `
             ${content}
+            ${copyButton}
             <div class="timestamp">${formatDate(item.updatedAt)}</div>
         `;
+        
+        // Add click handler for copy button
+        const button = itemElement.querySelector('.copy-button');
+        button.addEventListener('click', () => {
+            if (item.type === 'TEXT') {
+                clipboard.writeText(item.textContent || '');
+            } else if (item.type === 'IMAGE' && item.base64BinaryContent) {
+                const buffer = Buffer.from(item.base64BinaryContent, 'base64');
+                const image = nativeImage.createFromBuffer(buffer);
+                clipboard.writeImage(image);
+            }
+        });
         
         // Add to container and track in map
         container.appendChild(itemElement);
@@ -74,7 +98,6 @@ fetchClipboardItems();
 document.getElementById('refresh-button').addEventListener('click', fetchClipboardItems);
 
 // Listen for refresh events from the main process
-const { ipcRenderer } = require('electron');
 ipcRenderer.on('refresh-list', () => {
     fetchClipboardItems();
 });

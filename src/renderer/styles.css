@@ -32,6 +32,7 @@ h2 {
     margin-bottom: 10px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
 }
 
 .clipboard-text {
@@ -93,6 +94,37 @@ h2 {
 }
 
 .refresh-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+.copy-button {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background-color: transparent;
+    color: #666;
+    padding: 6px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+}
+
+.copy-button:hover {
+    opacity: 1;
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.copy-button:active {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+.copy-button svg {
     width: 16px;
     height: 16px;
 }
