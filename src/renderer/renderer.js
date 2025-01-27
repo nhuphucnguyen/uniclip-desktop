@@ -1,11 +1,9 @@
 function updateConnectionStatus(isConnected) {
-    const statusElement = document.getElementById('status');
+    const statusDot = document.getElementById('status-dot');
     if (isConnected) {
-        statusElement.textContent = 'Status: Connected';
-        statusElement.style.backgroundColor = '#e8f5e9';
+        statusDot.classList.add('connected');
     } else {
-        statusElement.textContent = 'Status: Disconnected';
-        statusElement.style.backgroundColor = '#ffebee';
+        statusDot.classList.remove('connected');
     }
 }
 
@@ -14,53 +12,69 @@ function formatDate(dateString) {
     return date.toLocaleString();
 }
 
+// Keep track of rendered items to avoid unnecessary re-renders
+let renderedItems = new Map();
+
 function renderClipboardItems(items) {
     const container = document.getElementById('clipboard-list');
+    
+    // Clear the container and rendered items map
     container.innerHTML = '';
-
-    // Deduplicate items based on server-provided content hash
-    const uniqueItems = new Map();
-    items.forEach(item => {
-        if (item.contentHash && !uniqueItems.has(item.contentHash)) {
-            uniqueItems.set(item.contentHash, item);
-        }
-    });
-
-    // Render unique items
-    Array.from(uniqueItems.values()).forEach(item => {
+    renderedItems.clear();
+    
+    // Render items in order
+    items.forEach((item) => {
         const itemElement = document.createElement('div');
         itemElement.className = 'clipboard-item';
-
+        
+        let content;
         if (item.type === 'TEXT') {
-            const textElement = document.createElement('div');
-            textElement.className = 'clipboard-text';
-            textElement.textContent = item.textContent;
-            itemElement.appendChild(textElement);
-        } else if (item.type === 'IMAGE') {
-            const imgElement = document.createElement('img');
-            imgElement.className = 'clipboard-image';
-            imgElement.src = `data:image/png;base64,${item.base64BinaryContent}`;
-            itemElement.appendChild(imgElement);
+            content = `<div class="clipboard-text">${item.textContent || ''}</div>`;
+        } else if (item.type === 'IMAGE' && item.base64BinaryContent) {
+            content = `<img class="clipboard-image" src="data:image/png;base64,${item.base64BinaryContent}" />`;
+        } else {
+            content = `<div class="clipboard-text error">Invalid or missing content</div>`;
         }
-
-        const timestampElement = document.createElement('div');
-        timestampElement.className = 'timestamp';
-        timestampElement.textContent = formatDate(item.createdAt);
-        itemElement.appendChild(timestampElement);
-
+        
+        // Update content
+        itemElement.innerHTML = `
+            ${content}
+            <div class="timestamp">${formatDate(item.updatedAt)}</div>
+        `;
+        
+        // Add to container and track in map
         container.appendChild(itemElement);
+        renderedItems.set(item.contentHash, itemElement);
     });
 }
 
-// Update clipboard items every 2 seconds
-setInterval(async () => {
+// Fetch clipboard items
+async function fetchClipboardItems() {
     try {
-        const response = await fetch(`http://localhost:8080/api/clipboard`);
+        const response = await fetch('http://localhost:8080/api/clipboard');
         const items = await response.json();
+        console.log('Fetched items:', items.map(item => ({
+            type: item.type,
+            contentHash: item.contentHash,
+            hasTextContent: !!item.textContent,
+            hasBase64Content: !!item.base64BinaryContent
+        })));
         renderClipboardItems(items);
         updateConnectionStatus(true);
     } catch (error) {
         console.error('Failed to fetch clipboard items:', error);
         updateConnectionStatus(false);
     }
-}, 2000);
+}
+
+// Initial fetch
+fetchClipboardItems();
+
+// Add refresh button click handler
+document.getElementById('refresh-button').addEventListener('click', fetchClipboardItems);
+
+// Listen for refresh events from the main process
+const { ipcRenderer } = require('electron');
+ipcRenderer.on('refresh-list', () => {
+    fetchClipboardItems();
+});

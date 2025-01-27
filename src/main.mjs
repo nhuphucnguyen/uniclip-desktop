@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import os from 'os';
 import fs from 'fs';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -94,6 +95,18 @@ function createTray() {
     }
 }
 
+function calculateHash(type, content) {
+    const hash = crypto.createHash('sha256');
+    if (type === 'TEXT') {
+        hash.update(content || '');
+    } else if (type === 'IMAGE') {
+        // For base64 content, convert to buffer first
+        const buffer = Buffer.from(content || '', 'base64');
+        hash.update(buffer);
+    }
+    return hash.digest('hex');
+}
+
 function monitorClipboard() {
     setInterval(async () => {
         const currentText = clipboard.readText();
@@ -101,7 +114,9 @@ function monitorClipboard() {
 
         let hasNewContent = false;
         let payload = {
-            deviceId: store.get('deviceId', `desktop-${os.hostname()}`),
+            type: 'TEXT',
+            textContent: null,
+            binaryContent: null
         };
 
         // Check for new text content
@@ -115,19 +130,39 @@ function monitorClipboard() {
         // Only check image if there's no new text content
         else if (!currentImage.isEmpty()) {
             const pngBuffer = currentImage.toPNG();
-            const base64Image = pngBuffer.toString('base64');
-            if (base64Image !== previousImageContent) {
-                hasNewContent = true;
-                previousImageContent = base64Image;
-                previousTextContent = ''; // Reset text tracking when image is copied
-                payload.type = 'IMAGE';
-                payload.binaryContent = base64Image;
+            if (pngBuffer.length > 0) {
+                const base64Image = pngBuffer.toString('base64');
+                if (base64Image !== previousImageContent) {
+                    hasNewContent = true;
+                    previousImageContent = base64Image;
+                    previousTextContent = ''; // Reset text tracking when image is copied
+                    payload.type = 'IMAGE';
+                    payload.binaryContent = base64Image;
+                }
             }
         }
 
         if (hasNewContent) {
             try {
-                await axios.post('http://localhost:8080/api/clipboard', payload);
+                // Calculate hash using the same algorithm as server
+                const hash = calculateHash(
+                    payload.type,
+                    payload.type === 'TEXT' ? payload.textContent : payload.binaryContent
+                );
+
+                try {
+                    // Try to update timestamp first
+                    await axios.put(`http://localhost:8080/api/clipboard/${hash}/touch`);
+                    if (mainWindow) mainWindow.webContents.send('refresh-list');
+                } catch (error) {
+                    if (error.response?.status === 404) {
+                        // If item doesn't exist, create it
+                        await axios.post('http://localhost:8080/api/clipboard', payload);
+                        if (mainWindow) mainWindow.webContents.send('refresh-list');
+                    } else {
+                        console.error('Failed to sync clipboard:', error);
+                    }
+                }
             } catch (error) {
                 console.error('Failed to sync clipboard:', error);
             }

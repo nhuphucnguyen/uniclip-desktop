@@ -1,6 +1,18 @@
 .container {
-    padding: 20px;
+    padding: 8px 20px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #f5f5f5;
+}
+
+h2 {
+    margin: 12px 0;
+    font-size: 16px;
 }
 
 #status {
@@ -15,8 +27,72 @@
 }
 
 .clipboard-item {
-    padding: 10px;
-    margin: 5px 0;
-    background-color: #f5f5f5;
-    border-radius: 4px;
+    background: white;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.clipboard-text {
+    word-break: break-word;
+    white-space: pre-wrap;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.clipboard-image {
+    max-width: 200px;
+    max-height: 200px;
+    object-fit: contain;
+}
+
+.timestamp {
+    color: #666;
+    font-size: 0.8em;
+    margin-top: 5px;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ffebee;  /* Default to red (disconnected) */
+    transition: background-color 0.3s ease;
+}
+
+.status-dot.connected {
+    background-color: #4CAF50;  /* Green when connected */
+}
+
+.refresh-button {
+    background-color: transparent;
+    color: #4CAF50;
+    padding: 6px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.refresh-button:hover {
+    background-color: rgba(76, 175, 80, 0.1);
+}
+
+.refresh-button:active {
+    background-color: rgba(76, 175, 80, 0.2);
+}
+
+.refresh-button svg {
+    width: 16px;
+    height: 16px;
 }
